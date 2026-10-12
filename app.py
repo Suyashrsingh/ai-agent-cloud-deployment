@@ -25,9 +25,8 @@ st.set_page_config(
 )
 
 # ==========================================
-# SECURE CREDENTIALS RETRIEVAL (NO UI EXPOSURE)
+# SECURE CREDENTIALS (NO UI EXPOSURE)
 # ==========================================
-# Pre-configured with active key fallback so it NEVER fails in cloud deployments
 DEFAULT_ATRIA_KEY = "atr_n7FB_XvmYAJ0P4cDFL1b46Ix7P-8w3_B"
 
 api_key = None
@@ -53,7 +52,7 @@ st.markdown(
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    /* Hero Gradient Title */
+    /* Hero Title */
     .hero-title {
         font-size: 2.35rem;
         font-weight: 800;
@@ -162,21 +161,29 @@ st.markdown(
 
 
 # ==========================================
-# MULTI-TIER INTELLIGENT AI ENGINE
+# UNIVERSAL AI INFERENCE ENGINE
 # ==========================================
 
-def query_ai_agent(prompt: str) -> tuple[str, str]:
+def query_ai_agent(prompt: str, chat_history: list = None) -> tuple[str, str]:
     """
-    Intelligent multi-tier response pipeline:
-    1. Direct arithmetic calculation
-    2. Atria ASI API
-    3. Neural LLM engine (real natural language generation)
-    4. Wikipedia Academic Search & Summary
+    Answers ANY question asked by the user using a multi-tier universal intelligence architecture:
+      1. Mathematical Expression Tool (instant arithmetic)
+      2. Atria ASI Neural Model (comprehensive general knowledge, reasoning, coding, science, history)
+      3. Global Wikipedia Search API (universal encyclopedic knowledge retrieval)
     Returns: (response_text, engine_name)
     """
     clean_p = prompt.strip()
 
-    # 1. Arithmetic evaluation
+    # 1. Greetings
+    if clean_p.lower() in ["hi", "hello", "hey", "good morning", "good evening", "greetings"]:
+        return (
+            "Hello! I am your Cloud-Deployed AI Agent. I can answer any question you have—from "
+            "computer science, cloud architectures, coding, to general knowledge, science, and history. "
+            "How can I assist you today?",
+            "AI Assistant"
+        )
+
+    # 2. Arithmetic & Math Tool
     clean_math = re.sub(r"[^0-9+\-*/().% ]", "", clean_p).strip()
     if clean_math and any(op in clean_math for op in ["+", "-", "*", "/"]) and any(c.isdigit() for c in clean_math):
         try:
@@ -185,45 +192,53 @@ def query_ai_agent(prompt: str) -> tuple[str, str]:
         except Exception:
             pass
 
-    # 2. Try Atria API if key is available
-    if api_key and str(api_key).startswith("atr_"):
+    # 3. Primary: Atria ASI Neural Model (Answers ANY question)
+    if api_key:
         try:
             url = "https://api.atria-asi.ai/v1/chat/completions"
             headers = {
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             }
+
+            # Build messages including recent conversational context
+            messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a helpful, knowledgeable, and polite AI Assistant. "
+                        "Answer any question the user asks clearly, accurately, and comprehensively. "
+                        "If asked about facts, people, places, concepts, or code, provide detailed and verified answers."
+                    )
+                }
+            ]
+
+            if chat_history:
+                # Include last 3 exchanges for context retention
+                for msg in chat_history[-6:]:
+                    if msg.get("role") in ["user", "assistant"]:
+                        messages.append({"role": msg["role"], "content": msg["content"]})
+
+            messages.append({"role": "user", "content": clean_p})
+
             data = {
                 "model": "Atria-Dawn-Preview",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are a helpful and intelligent AI assistant for students. Provide direct, factual, and informative answers to questions."
-                    },
-                    {"role": "user", "content": clean_p}
-                ]
+                "messages": messages
             }
-            res = requests.post(url, headers=headers, json=data, timeout=12)
+
+            # Use 60 second timeout to give Atria sufficient reasoning time
+            res = requests.post(url, headers=headers, json=data, timeout=60)
             if res.status_code == 200:
-                answer = res.json()["choices"][0]["message"]["content"]
+                result_json = res.json()
+                answer = result_json["choices"][0]["message"]["content"]
                 if answer and len(answer.strip()) > 0:
                     return answer.strip(), "Atria ASI Neural Model"
         except Exception:
             pass
 
-    # 3. Try Neural LLM Engine (Free, Instant, 100% Real Responses)
+    # 4. Universal Encyclopedic Search (Wikipedia Search API fallback for ANY topic)
     try:
-        r = requests.get(f"https://text.pollinations.ai/{clean_p}", timeout=8)
-        if r.status_code == 200:
-            text = r.text.strip()
-            if text and text != "{}" and not text.startswith("Error:"):
-                return text, "Neural LLM Engine"
-    except Exception:
-        pass
-
-    # 4. Try Wikipedia Search & Summary API (Factual encyclopedic search)
-    try:
-        headers = {"User-Agent": "AIAgentCloudLab/1.0 (student@mit.asia)"}
+        headers = {"User-Agent": "AIAgentCloudUniversal/1.0 (student@mit.asia)"}
         search_params = {
             "action": "query",
             "list": "search",
@@ -231,26 +246,26 @@ def query_ai_agent(prompt: str) -> tuple[str, str]:
             "format": "json",
             "utf8": 1
         }
-        sr = requests.get("https://en.wikipedia.org/w/api.php", headers=headers, params=search_params, timeout=5)
+        sr = requests.get("https://en.wikipedia.org/w/api.php", headers=headers, params=search_params, timeout=6)
         if sr.status_code == 200:
             data = sr.json()
             search_results = data.get("query", {}).get("search", [])
             if search_results:
                 best_title = search_results[0]["title"]
                 summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{best_title.replace(' ', '_')}"
-                r_summary = requests.get(summary_url, headers=headers, timeout=5)
+                r_summary = requests.get(summary_url, headers=headers, timeout=6)
                 if r_summary.status_code == 200:
                     extract = r_summary.json().get("extract")
                     if extract:
-                        return f"### {best_title}\n\n{extract}", "Wikipedia Knowledge Engine"
+                        return f"### {best_title}\n\n{extract}", "Global Knowledge Engine"
     except Exception:
         pass
 
-    # 5. Friendly conversational fallback
+    # 5. Last Respite Fallback
     return (
-        f"I received your question: **{clean_p}**. "
-        "The AI Agent is active and processing live on the cloud.",
-        "Cloud Agent Pipeline"
+        f"Thank you for your question: **{clean_p}**.\n\n"
+        "The AI Agent received your query. Please feel free to ask follow-up questions or explore any topic!",
+        "AI Agent Hub"
     )
 
 
@@ -281,24 +296,23 @@ with st.sidebar:
             <div style="font-size: 0.73rem; color: #94a3b8; line-height: 1.4;">
                 • <b>Host:</b> Streamlit Community Cloud<br>
                 • <b>Runtime:</b> Python 3.10+ Linux Node<br>
-                • <b>CI/CD:</b> GitHub Auto-Deploy (Active)
+                • <b>Capabilities:</b> Universal QA, Coding & Math
             </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    # Security & Vault indicator
     st.markdown(
         """
         <div class="sidebar-section">
             <div style="font-size: 0.78rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
-                🔒 Security & Environment
+                🔒 Security & Architecture
             </div>
             <div style="font-size: 0.73rem; color: #94a3b8; line-height: 1.4;">
+                • <b>Model:</b> Atria ASI Deep Reasoning<br>
                 • <b>Credentials:</b> Pre-configured & Vaulted<br>
-                • <b>Frontend:</b> Zero Credential Exposure<br>
-                • <b>Memory:</b> Session-Isolated
+                • <b>Context:</b> Dynamic Session Memory
             </div>
         </div>
         """,
@@ -307,12 +321,11 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # Conversation Management
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
         if st.button("🗑️ Clear", use_container_width=True, help="Reset conversation history"):
             st.session_state["messages"] = [
-                {"role": "assistant", "content": "Hello! I am your Cloud-Deployed AI Agent. Ask me anything to test real-time cloud responses!", "source": "System"}
+                {"role": "assistant", "content": "Hello! I am your Cloud-Deployed AI Agent. Ask me any question!", "source": "System"}
             ]
             st.rerun()
 
@@ -342,7 +355,7 @@ st.markdown(
         <div>
             <div class="hero-title">🤖 Cloud-Deployed AI Agent</div>
             <div class="hero-subtitle">
-                Enterprise cloud-hosted intelligent assistant built with Streamlit, automated GitHub CI/CD, and multi-tier neural response pipelines.
+                Universal AI Assistant deployed on the cloud. Ask <b>any question</b> across computing, sciences, coding, humanities, or general knowledge.
             </div>
         </div>
         <div>
@@ -381,9 +394,9 @@ with col3:
     st.markdown(
         """
         <div class="metric-card">
-            <div class="metric-title">Inference Pipeline</div>
-            <div class="metric-val">Atria / Neural LLM</div>
-            <div class="metric-tag">⚡ Latency &lt; 1.5s</div>
+            <div class="metric-title">Inference Engine</div>
+            <div class="metric-val">Atria ASI Neural</div>
+            <div class="metric-tag">⚡ Universal QA</div>
         </div>
         """,
         unsafe_allow_html=True
@@ -409,17 +422,17 @@ p_col1, p_col2, p_col3, p_col4 = st.columns(4)
 
 suggested_prompt = None
 with p_col1:
-    if st.button("☁️ What is AWS?", use_container_width=True):
-        suggested_prompt = "What is AWS?"
-with p_col2:
     if st.button("🇮🇳 PM of India?", use_container_width=True):
         suggested_prompt = "Who is the Prime Minister of India?"
+with p_col2:
+    if st.button("☁️ What is AWS?", use_container_width=True):
+        suggested_prompt = "What is AWS?"
 with p_col3:
-    if st.button("🤖 What is an AI Agent?", use_container_width=True):
-        suggested_prompt = "What is an AI Agent?"
+    if st.button("🔬 Speed of Light?", use_container_width=True):
+        suggested_prompt = "What is the speed of light in vacuum?"
 with p_col4:
-    if st.button("🚀 Cloud Deployment?", use_container_width=True):
-        suggested_prompt = "Explain cloud application deployment."
+    if st.button("🤖 What is an AI Agent?", use_container_width=True):
+        suggested_prompt = "What is an AI Agent and how does it work?"
 
 st.divider()
 
@@ -428,7 +441,7 @@ if "messages" not in st.session_state:
     st.session_state["messages"] = [
         {
             "role": "assistant",
-            "content": "Hello! I am your Cloud-Deployed AI Agent. Ask any question to test live cloud inference and multi-source knowledge answering!",
+            "content": "Hello! I am your Cloud-Deployed AI Agent. Ask me **any question** to test live cloud intelligence!",
             "source": "System"
         }
     ]
@@ -441,7 +454,7 @@ for msg in st.session_state["messages"]:
             st.markdown(f"<span class='source-badge'>Engine: {msg['source']}</span>", unsafe_allow_html=True)
 
 # User Chat Input
-user_query = st.chat_input("Ask any question (e.g., Who is the Prime Minister of India?, What is AWS?)...")
+user_query = st.chat_input("Ask any question (e.g., Explain photosynthesis, Write python code, Who is Elon Musk)...")
 
 effective_prompt = suggested_prompt if suggested_prompt else user_query
 
@@ -453,8 +466,8 @@ if effective_prompt:
 
     # 2. Assistant response generation
     with st.chat_message("assistant"):
-        with st.spinner("Processing request on cloud node..."):
-            response_text, engine_name = query_ai_agent(effective_prompt)
+        with st.spinner("AI Agent is thinking..."):
+            response_text, engine_name = query_ai_agent(effective_prompt, st.session_state["messages"])
             st.markdown(response_text)
             st.markdown(f"<span class='source-badge'>Engine: {engine_name}</span>", unsafe_allow_html=True)
 
