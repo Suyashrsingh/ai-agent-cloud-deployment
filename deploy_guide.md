@@ -48,14 +48,15 @@ git push -u origin main
 1. Go to [share.streamlit.io](https://share.streamlit.io/) and log in with your GitHub account.
 2. Click **Create app** (or **New app**).
 3. Fill in the repository details:
-   - **Repository:** `<YOUR_GITHUB_USERNAME>/ai-agent-cloud`
+   - **Repository:** `Suyashrsingh/ai-agent-cloud-deployment`
    - **Branch:** `main`
    - **Main file path:** `app.py`
+   - **App URL (custom):** `ai-agent-suyash.streamlit.app` (or any available name)
 4. Configure Secrets (API Keys):
    - Click **Advanced settings...**
    - In the **Secrets** section, paste:
      ```toml
-     ATRIA_API_KEY = "your_actual_key_here"
+     ATRIA_API_KEY = "atr_n7FB_XvmYAJ0P4cDFL1b46Ix7P-8w3_B"
      ```
    - Click **Save**.
 5. Click **Deploy!**
