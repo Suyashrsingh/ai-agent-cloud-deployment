@@ -1,0 +1,20 @@
+# Local environment files containing secret keys
+.env
+.env.*
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+.venv/
+env/
+ENV/
+
+# Streamlit local secrets (secrets must be set via Streamlit Cloud dashboard)
+.streamlit/secrets.toml
+
+# IDE configuration
+.vscode/
+.idea/
